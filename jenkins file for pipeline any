@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+    stages{
+        stage('code'){
+            steps{
+                echo "cloning code"
+                git url: "https://github.com/SamipDave/node-todo-cicd.git", branch: "master"
+            }
+            
+        }
+        stage('Build'){
+            steps{
+                echo "building image"
+                sh "docker build -t my-note-app ."
+            }
+            
+        }
+        stage('push'){
+            steps{
+              echo "pushing code to docker hub"
+              withCredentials([usernamePassword(credentialsId: "dockerHub",passwordVariable:"dockerHubpassword",usernameVariable:"dockerHubUser")]){
+              sh "docker tag my-note-app ${env.dockerHubUser}/my-note-app:latest"
+              sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+              sh "docker push ${env.dockerHubUser}/my-note-app:latest"
+              }
+            }
+            
+        }
+        stage('deploy'){
+            steps{
+                echo "deploying code"
+                sh "docker run -d -p 8000:8000 samipdave/my-note-app:latest"
+            }
+            
+        }
+    }
+}
